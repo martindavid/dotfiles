@@ -1,10 +1,12 @@
 return {
   "nvim-neo-tree/neo-tree.nvim",
   opts = {
+    enable_git_status = false,
+    enable_diagnostic = false,
     filesystem = {
       filtered_items = {
         visible = true,
-        show_hidden_count = true,
+        show_hidden_count = false,
         hide_dotfiles = false,
         hide_gitignored = true,
         hide_by_name = {
@@ -15,6 +17,7 @@ return {
         never_show = {},
       },
     },
+    async_directory_scan = "always",
     window = {
       position = "left",
     },
