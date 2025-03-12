@@ -1,0 +1,12 @@
+session_name: agent-studio
+start_directory: ~/atlassian-frontend-monorepo/platform
+windows:
+  - window_name: code
+    layout: tiled
+    panes:
+      - blank
+  - window_name: runner
+    layout: even-horizontal
+    panes:
+      - blank
+      - shell_command: cd ../jira

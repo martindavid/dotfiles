@@ -1,0 +1,15 @@
+session_name: csm-widget
+start_directory: ~/atlassian-frontend-monorepo/platform
+windows:
+  - window_name: code
+    layout: tiled
+    panes:
+      - blank
+  - window_name: runner
+    layout: even-horizontal
+    panes:
+      - shell_command:
+          - yarn watch @atlassian/conversation-assistant-widget
+      - shell_command:
+          - cd services/conversation-assistant-widget-installer/
+          - yarn start-with-widget
