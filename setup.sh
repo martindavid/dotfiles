@@ -60,8 +60,7 @@ install_neovim() {
   cd ~/neovim
   git checkout stable
   make CMAKE_BUILD_TYPE=RelWithDebInfo
-  cd build && cpack -G DEB
-  sudo dpkg -i ~/neovim/build/nvim-linux64.deb
+  cd build && cpack -G DEB && sudo dpkg -i nvim-linux-x86_64.deb
   ln -s ~/neovim/build/bin/nvim ~/.bin/nvim
   ln -s ~/dotfiles/neovim ~/.config/nvim
 }
@@ -101,7 +100,7 @@ install_eza() {
     wget -c https://github.com/eza-community/eza/releases/latest/download/eza_x86_64-unknown-linux-gnu.tar.gz -O - | tar xz
     sudo chmod +x eza
     sudo chown root:root eza
-    sudo mv eza /usr/local/bin/eza
+    sudo mv eza ~/.bin/eza
   fi
 }
 
