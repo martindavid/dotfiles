@@ -93,6 +93,18 @@ install_tmux() {
   ln -s ~/dotfiles/tmux/tmux.conf ~/.tmux.conf
 }
 
+install_eza() {
+  echo "Installing eza"
+  if command -v eza >/dev/null 2>&1; then
+    echo "eza is installed"
+  else
+    wget -c https://github.com/eza-community/eza/releases/latest/download/eza_x86_64-unknown-linux-gnu.tar.gz -O - | tar xz
+    sudo chmod +x eza
+    sudo chown root:root eza
+    sudo mv eza /usr/local/bin/eza
+  fi
+}
+
 main() {
   echo "Setting up the system..."
   prerequisites
@@ -102,6 +114,7 @@ main() {
   install_neovim
   install_lazygit
   install_tmux
+  install_eza
   echo "Setup complete!"
 }
 
