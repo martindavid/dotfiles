@@ -1,0 +1,5 @@
+git:
+  autoFetch: false
+  # If true, pass the --all arg to git fetch
+  fetchAll: false
+  autoRefresh: false
