@@ -32,7 +32,7 @@ install_oh_my_zsh() {
   fi
   # Install Oh My Zsh if not already installed
   if [ ! -d "$HOME/.oh-my-zsh" ]; then
-    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/master/tools/install.sh)"
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
   fi
 
   ln -s ~/dotfiles/.zshrc ~/.zshrc
@@ -60,7 +60,8 @@ install_neovim() {
   cd ~/neovim
   git checkout stable
   make CMAKE_BUILD_TYPE=RelWithDebInfo
-  cd build && cpack -G DEB && sudo dpkg -i nvim-linux64.deb
+  cd build && cpack -G DEB
+  sudo dpkg -i ~/neovim/build/nvim-linux64.deb
   ln -s ~/neovim/build/bin/nvim ~/.bin/nvim
   ln -s ~/dotfiles/neovim ~/.config/nvim
 }
