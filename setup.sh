@@ -30,7 +30,7 @@ install_oh_my_zsh() {
   fi
   # Install Oh My Zsh if not already installed
   if [ ! -d "$HOME/.oh-my-zsh" ]; then
-    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
   fi
 
   # install auto-sugegestions plugin if not exist
@@ -63,6 +63,7 @@ install_neovim() {
   else
     curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz
     sudo tar -C $HOME/.bin -xzf nvim-linux-x86_64.tar.gz
+    rm nvim-linux-x86_64.tar.gz
     ln -s ~/.bin/nvim-linux-x86_64/bin/nvim ~/.bin/nvim
     ln -s ~/dotfiles/neovim ~/.config/nvim
   fi
