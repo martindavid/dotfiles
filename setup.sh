@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -x
+
 # Function to update and upgrade the system
 prerequisites() {
   echo "Updating system..."
@@ -32,6 +34,8 @@ install_oh_my_zsh() {
   if [ ! -d "$HOME/.oh-my-zsh" ]; then
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/master/tools/install.sh)"
   fi
+
+  ln -s ~/dotfiles/.zshrc ~/.zshrc
   echo "Oh My Zsh installed!"
 }
 
@@ -57,7 +61,8 @@ install_neovim() {
   git checkout stable
   make CMAKE_BUILD_TYPE=RelWithDebInfo
   cd build && cpack -G DEB && sudo dpkg -i nvim-linux64.deb
-  ln -s ~/.bin/nvim-linux-x86_64/bin/nvim ~/.bin/nvim
+  ln -s ~/neovim/build/bin/nvim ~/.bin/nvim
+  ln -s ~/dotfiles/neovim ~/.config/nvim
 }
 
 install_lazygit() {
@@ -83,16 +88,8 @@ install_tmux() {
     git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
   fi
   echo "tmux installed!"
-}
 
-configure_dot_files_config() {
-  echo "Pulling dot files and config..."
-  if [ ! -d "$HOME/dotfiles" ]; then
-    git clone https://github.com/martindavid/dotfiles.git ~/dotfiles
-  fi
-
-  ln -s ~/dotfiles/neovim ~/.config/nvim
-  ln -s ~/dotfiles/tmux.conf ~/.tmux.conf
+  ln -s ~/dotfiles/tmux/tmux.conf ~/.tmux.conf
 }
 
 main() {
@@ -106,3 +103,5 @@ main() {
   install_tmux
   echo "Setup complete!"
 }
+
+main
