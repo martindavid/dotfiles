@@ -54,15 +54,14 @@ install_neovim() {
   sudo apt remove neovim neovim-runtime
 
   echo "Installing Neovim from source..."
-  if [ ! -d "$HOME/neovim" ]; then
-    git clone https://github.com/neovim/neovim.git ~/neovim
+  if command -v nvim >/dev/null 2>&1; then
+    echo "Neovim is installed"
+  else
+    curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz
+    sudo tar -C $HOME/.bin -xzf nvim-linux-x86_64.tar.gz
+    ln -s ~/.bin/nvim-linux-x86_64/bin/nvim ~/.bin/nvim
+    ln -s ~/dotfiles/neovim ~/.config/nvim
   fi
-  cd ~/neovim
-  git checkout stable
-  make CMAKE_BUILD_TYPE=RelWithDebInfo
-  cd build && cpack -G DEB && sudo dpkg -i nvim-linux-x86_64.deb
-  ln -s ~/neovim/build/bin/nvim ~/.bin/nvim
-  ln -s ~/dotfiles/neovim ~/.config/nvim
 }
 
 install_lazygit() {
