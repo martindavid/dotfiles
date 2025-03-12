@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -x
-
 # Function to update and upgrade the system
 prerequisites() {
   echo "Updating system..."
@@ -35,6 +33,12 @@ install_oh_my_zsh() {
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
   fi
 
+  # install auto-sugegestions plugin if not exist
+  if [ ! -d "$HOME/.oh-my-zsh/custom/plugins/zsh-autosuggestions" ]; then
+    git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+  fi
+
+  rm ~/.zshrc
   ln -s ~/dotfiles/.zshrc ~/.zshrc
   echo "Oh My Zsh installed!"
 }
@@ -66,8 +70,7 @@ install_neovim() {
 
 install_lazygit() {
   echo "Installing lazygit..."
-  if command -v lazygit >/dev/null 2>&1; then
-    echo "lazygit is installed"
+  if command -v lazygit >/dev/null 2>&1; then echo "lazygit is installed"
   else
     cd ~
     LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | \grep -Po '"tag_name": *"v\K[^"]*')
@@ -87,6 +90,9 @@ install_tmux() {
     git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
   fi
   echo "tmux installed!"
+
+  echo "Installing tmuxp"
+  sudo apt install tmuxp
 
   ln -s ~/dotfiles/tmux/tmux.conf ~/.tmux.conf
 }
