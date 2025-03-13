@@ -8,8 +8,6 @@ windows:
   - window_name: runner
     layout: even-horizontal
     panes:
-      - shell_command:
-          - yarn watch @atlassian/conversation-assistant-widget
+      - blank
       - shell_command:
           - cd services/conversation-assistant-widget-installer/
-          - yarn start-with-widget
