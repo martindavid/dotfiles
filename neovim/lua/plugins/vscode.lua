@@ -1,3 +1,5 @@
+if true then return {} end -- WARN: REMOVE THIS LINE TO ACTIVATE THIS FILE
+
 -- don't do anything in non-vscode instances
 if not vim.g.vscode then return {} end
 
