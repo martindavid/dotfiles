@@ -20,6 +20,7 @@ return {
             return utils.root_has_file "package.json"
               or utils.root_has_file ".eslintrc.json"
               or utils.root_has_file ".eslintrc.js"
+              or utils.root_has_file ".eslint.config.mjs"
           end,
         })
       end,
