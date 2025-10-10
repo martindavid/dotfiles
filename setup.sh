@@ -16,7 +16,9 @@ prerequisites() {
 install_apt_packages() {
   echo "Installing required packages..."
   sudo apt install -y zsh git build-essential libtool libtool-bin \
-    autoconf automake cmake g++ pkg-config unzip curl gettext libevent-dev bison
+    autoconf automake cmake g++ pkg-config unzip curl gettext libevent-dev bison \
+    fd-find
+  curl https://mise.run | sh
 
   echo "Required packages installed!"
 }
