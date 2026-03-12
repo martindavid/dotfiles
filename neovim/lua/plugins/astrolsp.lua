@@ -1,5 +1,3 @@
--- if true then return {} end -- WARN: REMOVE THIS LINE TO ACTIVATE THIS FILE
-
 -- AstroLSP allows you to customize the features in AstroNvim's LSP configuration engine
 -- Configuration documentation can be found with `:h astrolsp`
 -- NOTE: We highly recommend setting up the Lua Language Server (`:LspInstall lua_ls`)
@@ -45,6 +43,106 @@ return {
     ---@diagnostic disable: missing-fields
     config = {
       -- clangd = { capabilities = { offsetEncoding = "utf-8" } },
+      
+      -- Multi-workspace config for AFM monorepo - VSCode-like behavior with 8GB limit
+      vtsls = {
+        settings = {
+          typescript = {
+            -- Memory and performance settings
+            tsserver = {
+              maxTsServerMemory = 8192, -- 8GB limit (VSCode default is 3GB)
+              -- Use syntax server for faster response (like VSCode)
+              useSyntaxServer = "auto", -- Lightweight server for syntax ops
+              -- Disable project-wide diagnostics to save memory
+              experimental = {
+                enableProjectDiagnostics = false, -- Don't analyze entire project upfront
+              },
+            },
+            -- Disable heavy inlay hints (VSCode defaults)
+            inlayHints = {
+              enumMemberValues = { enabled = false },
+              functionLikeReturnTypes = { enabled = false },
+              parameterNames = { enabled = "none" },
+              parameterTypes = { enabled = false },
+              propertyDeclarationTypes = { enabled = false },
+              variableTypes = { enabled = false },
+            },
+            -- Monorepo-specific optimizations
+            preferences = {
+              -- Key: Only scan current package for auto-imports (like VSCode "auto" mode)
+              includePackageJsonAutoImports = "auto", -- Smart scanning, not "off"
+              -- Exclude patterns to reduce scanning
+              autoImportFileExcludePatterns = {
+                "**/node_modules/**",
+                "**/.git/**",
+                "**/dist/**",
+                "**/build/**",
+                "**/.next/**",
+                "**/coverage/**",
+              },
+            },
+            -- Workspace-wide settings
+            workspaceSymbols = {
+              scope = "currentProject", -- Only current project, not all open projects
+              excludeLibrarySymbols = true, -- Don't include node_modules in symbol search
+            },
+            updateImportsOnFileMove = { enabled = "always" },
+            -- Disable automatic type acquisition to save memory
+            disableAutomaticTypeAcquisition = true,
+          },
+          javascript = {
+            inlayHints = {
+              enumMemberValues = { enabled = false },
+              functionLikeReturnTypes = { enabled = false },
+              parameterNames = { enabled = "none" },
+              parameterTypes = { enabled = false },
+              propertyDeclarationTypes = { enabled = false },
+              variableTypes = { enabled = false },
+            },
+            preferences = {
+              includePackageJsonAutoImports = "auto",
+              autoImportFileExcludePatterns = {
+                "**/node_modules/**",
+                "**/.git/**",
+                "**/dist/**",
+                "**/build/**",
+              },
+            },
+            updateImportsOnFileMove = { enabled = "always" },
+          },
+          vtsls = {
+            enableMoveToFileCodeAction = true,
+            -- Use workspace TypeScript version (monorepo may have specific version)
+            autoUseWorkspaceTsdk = true,
+            -- Experimental: server-side optimizations
+            experimental = {
+              completion = {
+                enableServerSideFuzzyMatch = true, -- Filter on server like VSCode
+                entriesLimit = 2000, -- Reasonable limit (increased from 1000)
+              },
+            },
+          },
+        },
+        -- MULTI-WORKSPACE MODE: Allow multiple workspace folders
+        -- This enables cross-package features like VSCode
+        root_dir = function(fname)
+          local util = require("lspconfig.util")
+          -- Find closest package.json (current package)
+          return util.root_pattern("package.json")(fname)
+        end,
+        -- CRITICAL: Don't override workspace_folders - allow vtsls to manage them
+        -- BUT configure it to be memory-efficient like VSCode
+        on_init = function(client, initialize_result)
+          -- Ensure we're using workspace TypeScript
+          if initialize_result.capabilities then
+            client.server_capabilities.workspace = client.server_capabilities.workspace or {}
+            client.server_capabilities.workspace.workspaceFolders = {
+              supported = true,
+              changeNotifications = true,
+            }
+          end
+        end,
+      },
     },
     -- customize how language servers are attached
     handlers = {

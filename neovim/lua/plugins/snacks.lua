@@ -49,6 +49,30 @@ return {
           truncate = 80,
         },
       },
+      -- Configure file search to include all files
+      sources = {
+        files = {
+          -- Use fd with custom ignore patterns
+          cmd = "fd",
+          args = {
+            "--type", "f",
+            "--hidden",  -- Include hidden files
+            "--exclude", "node_modules",
+            "--exclude", ".git",
+            "--exclude", "dist",
+            "--exclude", "build",
+          },
+        },
+        grep = {
+          -- Use ripgrep for grep
+          cmd = "rg",
+          args = {
+            "--color=never",
+            "--line-number",
+            "--column",
+          },
+        },
+      },
     },
   },
 }

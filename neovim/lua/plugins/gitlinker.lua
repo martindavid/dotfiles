@@ -1,5 +1,3 @@
-if true then return {} end -- WARN: REMOVE THIS LINE TO ACTIVATE THIS FILE
-
 local function stash_matcher(url_data)
   local url = "https://stash.atlassian.com/projects/"
   url = url .. "atlassian/repos/" .. url_data.repo:gsub("%.git", "")
