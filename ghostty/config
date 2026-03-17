@@ -1,0 +1,18 @@
+# Appearance
+theme = Catppuccin Mocha
+font-family = "SauceCodePro Nerd Font"
+font-size = 15
+cursor-style = block
+
+# Window & UI
+window-padding-x = 8
+window-padding-y = 8
+macos-titlebar-style = hidden
+
+# Functional
+confirm-close-surface = false
+copy-on-select = true
+scrollback-limit = 10000
+
+# Mouse
+mouse-hide-while-typing = true

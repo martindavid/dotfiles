@@ -83,7 +83,7 @@ install_brew_packages() {
 
   local packages=(
     zsh
-    git
+    git         # replaces the ancient Apple-bundled git (/usr/bin/git)
     cmake
     pkg-config
     curl
@@ -92,9 +92,30 @@ install_brew_packages() {
     fd          # equivalent of fd-find on Debian
     ripgrep     # commonly used alongside fd/fzf
     mise        # replaces `curl https://mise.run | sh`
+    git-delta   # prettier diffs for lazygit and git-fuzzy
+    gh          # GitHub CLI — create PRs, issues, manage repos from terminal
+    zoxide      # smarter cd — jumps to frecency-ranked directories
+    atuin       # shell history sync with fuzzy search across machines
+    starship    # fast, informative cross-shell prompt (replaces robbyrussell)
+    btop        # modern interactive system monitor (CPU, memory, network, disk)
   )
 
   brew install "${packages[@]}"
+
+  # Explicitly link Homebrew git so it shadows the macOS system git (/usr/bin/git).
+  # macOS SIP protects /usr/bin so we cannot overwrite it; instead we ensure
+  # /opt/homebrew/bin (managed by brew shellenv) is earlier in PATH.
+  # `brew link --overwrite git` forces symlinks into Homebrew's bin prefix.
+  brew link --overwrite git
+
+  # Verify the active git is the Homebrew one
+  local active_git
+  active_git="$(command -v git)"
+  if [[ "$active_git" == /opt/homebrew/* ]] || [[ "$active_git" == /usr/local/* ]]; then
+    info "Homebrew git is active: $(git --version) at $active_git"
+  else
+    warn "System git may still be active ($active_git). Restart your terminal after setup."
+  fi
 
   info "Required Homebrew packages installed!"
 }
@@ -256,6 +277,87 @@ install_aerospace() {
   info "AeroSpace installed!"
 }
 
+# ─── git-fuzzy ───────────────────────────────────────────────────────────────
+# Interactive git CLI used by the .zshrc aliases (gs, gd, glog).
+# Not available via Homebrew — must be cloned from source.
+# Requires fzf (already installed above). Optional: delta, bat, eza.
+install_git_fuzzy() {
+  info "Installing git-fuzzy…"
+
+  local install_dir="$HOME/.local/share/git-fuzzy"
+
+  if [[ -d "$install_dir" ]]; then
+    info "git-fuzzy already installed — pulling latest…"
+    git -C "$install_dir" pull --quiet
+  else
+    mkdir -p "$HOME/.local/share"
+    git clone https://github.com/bigH/git-fuzzy.git "$install_dir"
+  fi
+
+  info "git-fuzzy installed!"
+}
+
+# ─── Fonts ───────────────────────────────────────────────────────────────────
+# Install Nerd Fonts via Homebrew casks.
+# SauceCodePro Nerd Font is referenced in the Ghostty config (font-family).
+# Homebrew serves fonts from homebrew/cask (merged from cask-fonts in 4.x).
+install_fonts() {
+  info "Installing fonts…"
+
+  local font_casks=(
+    font-sauce-code-pro-nerd-font   # SauceCodePro Nerd Font — used by Ghostty config
+  )
+
+  brew install --cask "${font_casks[@]}"
+
+  info "Fonts installed!"
+}
+
+# ─── Ghostty ─────────────────────────────────────────────────────────────────
+# Ghostty is a GPU-accelerated terminal emulator. Its config lives at
+# ~/.config/ghostty/config (XDG-compliant, no extension).
+install_ghostty_config() {
+  info "Symlinking Ghostty config…"
+
+  local ghostty_config_dir="$HOME/.config/ghostty"
+  local ghostty_config="$ghostty_config_dir/config"
+  mkdir -p "$ghostty_config_dir"
+
+  if [[ -L "$ghostty_config" ]]; then
+    info "Ghostty config symlink already exists."
+  elif [[ -f "$ghostty_config" ]]; then
+    warn "~/.config/ghostty/config exists and is not a symlink — backing it up as config.bak"
+    mv "$ghostty_config" "${ghostty_config}.bak"
+    ln -sf "$HOME/dotfiles/ghostty/config" "$ghostty_config"
+  else
+    ln -sf "$HOME/dotfiles/ghostty/config" "$ghostty_config"
+  fi
+
+  info "Ghostty config symlinked!"
+}
+
+# ─── starship ────────────────────────────────────────────────────────────────
+# Symlink the starship prompt config from the dotfiles repo.
+# Starship reads ~/.config/starship.toml by default.
+install_starship_config() {
+  info "Symlinking starship config…"
+
+  local starship_config="$HOME/.config/starship.toml"
+  mkdir -p "$HOME/.config"
+
+  if [[ -L "$starship_config" ]]; then
+    info "starship.toml symlink already exists."
+  elif [[ -f "$starship_config" ]]; then
+    warn "~/.config/starship.toml exists and is not a symlink — backing it up as starship.toml.bak"
+    mv "$starship_config" "${starship_config}.bak"
+    ln -sf "$HOME/dotfiles/starship.toml" "$starship_config"
+  else
+    ln -sf "$HOME/dotfiles/starship.toml" "$starship_config"
+  fi
+
+  info "starship config symlinked!"
+}
+
 # ─── bat (optional but referenced in .zshrc) ─────────────────────────────────
 # The .zshrc aliases `cat` to `bat` when available, so install it.
 install_bat() {
@@ -286,7 +388,11 @@ main() {
   install_lazygit
   install_tmux
   install_eza
+  install_fonts
   install_aerospace
+  install_git_fuzzy
+  install_ghostty_config
+  install_starship_config
   install_bat
 
   echo ""
@@ -295,13 +401,11 @@ main() {
   info "============================================="
   info ""
   info "Next steps:"
-  info "  1. Add the following lines to your ~/.zshrc (if not already present):"
-  info "       source <(fzf --zsh)              # fzf shell integration (key bindings + completion)"
-  info "       eval \"\$(mise activate zsh)\"      # mise runtime version manager activation"
-  info "  2. Restart your terminal (or run: source ~/.zshrc)"
-  info "  3. Open tmux and press 'prefix + I' to install tmux plugins via TPM"
-  info "  4. Open Neovim — Lazy.nvim will auto-install plugins on first launch"
-  info "  5. Launch AeroSpace from Applications or enable 'start-at-login'"
+  info "  1. Restart your terminal (or run: source ~/.zshrc)"
+  info "  2. Open tmux and press 'prefix + I' to install tmux plugins via TPM"
+  info "  3. Open Neovim — Lazy.nvim will auto-install plugins on first launch"
+  info "  4. Launch AeroSpace from Applications or enable 'start-at-login'"
+  info "  5. Run 'tmuxp load /path/to/workspace.yaml' to start a tmuxp session"
   echo ""
 }
 
