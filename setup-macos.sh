@@ -419,6 +419,55 @@ install_bat() {
   info "bat installed!"
 }
 
+# ─── Languages (via mise) ────────────────────────────────────────────────────
+# Install programming language runtimes via mise and any global packages
+# required by tools (e.g. Neovim's Python/Ruby providers).
+install_languages() {
+  info "Installing language runtimes via mise…"
+
+  if ! command -v mise &>/dev/null; then
+    error "mise is not installed — skipping language installation."
+    return 1
+  fi
+
+  # Activate mise in the current bash session so `mise install` and
+  # the installed binaries are available immediately.
+  eval "$(mise activate bash)"
+
+  # Node.js (latest LTS)
+  info "Installing Node.js (latest)…"
+  mise use --global node@latest
+
+  # Go (latest)
+  info "Installing Go (latest)…"
+  mise use --global go@latest
+
+  # Python (latest) + neovim module for Neovim's :checkhealth
+  info "Installing Python (latest)…"
+  mise use --global python@latest
+
+  info "Installing pynvim (Neovim Python provider)…"
+  pip3 install --upgrade pynvim || warn "Failed to install pynvim — run 'pip3 install pynvim' manually."
+
+  # Ruby (latest) + neovim gem for Neovim's :checkhealth
+  info "Installing Ruby (latest)…"
+  mise use --global ruby@latest
+
+  info "Installing neovim gem (Neovim Ruby provider)…"
+  gem install neovim || warn "Failed to install neovim gem — run 'gem install neovim' manually."
+
+  # Verify installations
+  echo ""
+  info "Installed language versions:"
+  info "  Node.js : $(node --version 2>/dev/null || echo 'not found')"
+  info "  Go      : $(go version 2>/dev/null || echo 'not found')"
+  info "  Python  : $(python3 --version 2>/dev/null || echo 'not found')"
+  info "  Ruby    : $(ruby --version 2>/dev/null || echo 'not found')"
+  echo ""
+
+  info "Language runtimes installed!"
+}
+
 # ─── Main ────────────────────────────────────────────────────────────────────
 main() {
   echo ""
@@ -441,6 +490,7 @@ main() {
   install_ghostty_config
   install_starship_config
   install_bat
+  install_languages
 
   echo ""
   info "============================================="
