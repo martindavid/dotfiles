@@ -16,7 +16,11 @@
 #   - This repo cloned to ~/dotfiles
 #
 
-set -euo pipefail
+set -uo pipefail
+# NOTE: We intentionally do NOT use `set -e` (errexit) because many
+# Homebrew commands return non-zero for non-fatal reasons (e.g. "already
+# installed", "already linked"). Instead, we check exit codes explicitly
+# where failure matters.
 
 # ─── Colour helpers ──────────────────────────────────────────────────────────
 GREEN='\033[0;32m'
@@ -27,6 +31,12 @@ NC='\033[0m' # No Colour
 info()  { echo -e "${GREEN}[INFO]${NC}  $*"; }
 warn()  { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 error() { echo -e "${RED}[ERROR]${NC} $*"; }
+
+# ─── Resolve the dotfiles repo directory ─────────────────────────────────────
+# Determine the absolute path of this script's directory so symlinks work
+# regardless of where the repo is cloned (e.g. ~/dotfiles, ~/repos/dotfiles).
+DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+info "Dotfiles directory: $DOTFILES_DIR"
 
 # ─── Prerequisites ───────────────────────────────────────────────────────────
 # Ensure Xcode Command Line Tools and Homebrew are present.
@@ -100,13 +110,14 @@ install_brew_packages() {
     btop        # modern interactive system monitor (CPU, memory, network, disk)
   )
 
-  brew install "${packages[@]}"
+  # Use --quiet to suppress noise for already-installed packages.
+  # brew install returns 0 even if already installed when using formulae names.
+  brew install "${packages[@]}" || warn "Some packages may have failed — check output above."
 
   # Explicitly link Homebrew git so it shadows the macOS system git (/usr/bin/git).
   # macOS SIP protects /usr/bin so we cannot overwrite it; instead we ensure
   # /opt/homebrew/bin (managed by brew shellenv) is earlier in PATH.
-  # `brew link --overwrite git` forces symlinks into Homebrew's bin prefix.
-  brew link --overwrite git
+  brew link --overwrite git 2>/dev/null || true
 
   # Verify the active git is the Homebrew one
   local active_git
@@ -143,20 +154,24 @@ install_oh_my_zsh() {
     info "Default shell is already Homebrew zsh."
   fi
 
-  # Install Oh My Zsh if not already present
+  # Install Oh My Zsh if not already present.
+  # RUNZSH=no   — don't launch zsh after install (we're mid-script).
+  # KEEP_ZSHRC=yes — don't overwrite an existing .zshrc (we symlink our own below).
   if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
-    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+    RUNZSH=no KEEP_ZSHRC=yes \
+      sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
   fi
 
-  # Install zsh-autosuggestions plugin if not already present
-  if [[ ! -d "$HOME/.oh-my-zsh/custom/plugins/zsh-autosuggestions" ]]; then
+  # Install zsh-autosuggestions plugin if not already present.
+  # Use explicit path instead of $ZSH_CUSTOM which is unset in bash context.
+  local omz_custom="$HOME/.oh-my-zsh/custom"
+  if [[ ! -d "$omz_custom/plugins/zsh-autosuggestions" ]]; then
     git clone https://github.com/zsh-users/zsh-autosuggestions \
-      "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-autosuggestions"
+      "$omz_custom/plugins/zsh-autosuggestions"
   fi
 
-  # Symlink .zshrc (remove any existing file first)
-  rm -f "$HOME/.zshrc"
-  ln -s "$HOME/dotfiles/.zshrc" "$HOME/.zshrc"
+  # Symlink .zshrc — use ln -sf to atomically replace any existing file/symlink.
+  ln -sf "$DOTFILES_DIR/.zshrc" "$HOME/.zshrc"
 
   info "Oh My Zsh installed!"
 }
@@ -193,7 +208,7 @@ install_neovim() {
   # Symlink the Neovim config directory
   if [[ ! -L "$HOME/.config/nvim" && ! -d "$HOME/.config/nvim" ]]; then
     mkdir -p "$HOME/.config"
-    ln -s "$HOME/dotfiles/neovim" "$HOME/.config/nvim"
+    ln -s "$DOTFILES_DIR/neovim" "$HOME/.config/nvim"
   elif [[ -L "$HOME/.config/nvim" ]]; then
     info "Neovim config symlink already exists."
   else
@@ -215,11 +230,16 @@ install_lazygit() {
 
   # Symlink lazygit config
   local lazygit_config_dir="$HOME/Library/Application Support/lazygit"
-  if [[ ! -d "$lazygit_config_dir" ]]; then
-    mkdir -p "$lazygit_config_dir"
-  fi
-  if [[ ! -L "$lazygit_config_dir/config.yml" ]]; then
-    ln -sf "$HOME/dotfiles/lazygit/config.yml" "$lazygit_config_dir/config.yml"
+  mkdir -p "$lazygit_config_dir"
+
+  if [[ -L "$lazygit_config_dir/config.yml" ]]; then
+    info "lazygit config symlink already exists."
+  elif [[ -f "$lazygit_config_dir/config.yml" ]]; then
+    warn "lazygit config.yml exists and is not a symlink — backing it up as config.yml.bak"
+    mv "$lazygit_config_dir/config.yml" "$lazygit_config_dir/config.yml.bak"
+    ln -sf "$DOTFILES_DIR/lazygit/config.yml" "$lazygit_config_dir/config.yml"
+  else
+    ln -sf "$DOTFILES_DIR/lazygit/config.yml" "$lazygit_config_dir/config.yml"
   fi
 
   info "lazygit installed!"
@@ -240,13 +260,21 @@ install_tmux() {
     git clone https://github.com/tmux-plugins/tpm "$HOME/.tmux/plugins/tpm"
   fi
 
-  # Install tmuxp (tmux session manager) — available in Homebrew Core
+  # Install tmuxp (tmux session manager)
   info "Installing tmuxp…"
-  brew install tmuxp
+  brew install tmuxp || {
+    warn "tmuxp not available via Homebrew — falling back to pipx…"
+    if command -v pipx &>/dev/null; then
+      pipx install tmuxp
+    elif command -v pip3 &>/dev/null; then
+      pip3 install --user tmuxp
+    else
+      warn "Could not install tmuxp — install manually later via 'pip3 install tmuxp'"
+    fi
+  }
 
-  # Symlink tmux config
-  rm -f "$HOME/.tmux.conf"
-  ln -s "$HOME/dotfiles/tmux/tmux.conf" "$HOME/.tmux.conf"
+  # Symlink tmux config — use ln -sf to atomically replace any existing file/symlink.
+  ln -sf "$DOTFILES_DIR/tmux/tmux.conf" "$HOME/.tmux.conf"
 
   # NOTE: The dotfiles tmux.conf uses xsel for copy-pipe (Linux).
   # On macOS, tmux-yank plugin auto-detects pbcopy, so no config
@@ -283,8 +311,14 @@ install_aerospace() {
   fi
 
   # Symlink AeroSpace config
-  if [[ ! -L "$HOME/.aerospace.toml" ]]; then
-    ln -sf "$HOME/dotfiles/.aerospace.toml" "$HOME/.aerospace.toml"
+  if [[ -L "$HOME/.aerospace.toml" ]]; then
+    info "AeroSpace config symlink already exists."
+  elif [[ -f "$HOME/.aerospace.toml" ]]; then
+    warn "~/.aerospace.toml exists and is not a symlink — backing it up as .aerospace.toml.bak"
+    mv "$HOME/.aerospace.toml" "$HOME/.aerospace.toml.bak"
+    ln -sf "$DOTFILES_DIR/.aerospace.toml" "$HOME/.aerospace.toml"
+  else
+    ln -sf "$DOTFILES_DIR/.aerospace.toml" "$HOME/.aerospace.toml"
   fi
 
   info "AeroSpace installed!"
@@ -341,9 +375,9 @@ install_ghostty_config() {
   elif [[ -f "$ghostty_config" ]]; then
     warn "~/.config/ghostty/config exists and is not a symlink — backing it up as config.bak"
     mv "$ghostty_config" "${ghostty_config}.bak"
-    ln -sf "$HOME/dotfiles/ghostty/config" "$ghostty_config"
+    ln -sf "$DOTFILES_DIR/ghostty/config" "$ghostty_config"
   else
-    ln -sf "$HOME/dotfiles/ghostty/config" "$ghostty_config"
+    ln -sf "$DOTFILES_DIR/ghostty/config" "$ghostty_config"
   fi
 
   info "Ghostty config symlinked!"
@@ -363,9 +397,9 @@ install_starship_config() {
   elif [[ -f "$starship_config" ]]; then
     warn "~/.config/starship.toml exists and is not a symlink — backing it up as starship.toml.bak"
     mv "$starship_config" "${starship_config}.bak"
-    ln -sf "$HOME/dotfiles/starship.toml" "$starship_config"
+    ln -sf "$DOTFILES_DIR/starship.toml" "$starship_config"
   else
-    ln -sf "$HOME/dotfiles/starship.toml" "$starship_config"
+    ln -sf "$DOTFILES_DIR/starship.toml" "$starship_config"
   fi
 
   info "starship config symlinked!"

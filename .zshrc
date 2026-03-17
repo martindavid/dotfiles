@@ -116,43 +116,57 @@ setopt AUTO_CD              # Type a directory name to cd into it without typing
 setopt INTERACTIVE_COMMENTS # Allow # comments in interactive shell (useful for annotations)
 
 # ─── Tool integrations ──────────────────────────────────────────────────────
+# Each integration is guarded with `command -v` so the shell loads cleanly
+# even if a tool hasn't been installed yet (e.g. on a fresh machine before
+# running setup-macos.sh, or on a Linux box sharing this .zshrc).
+
 # fzf: key bindings (CTRL-T, CTRL-R, ALT-C) and fuzzy completion
-source <(fzf --zsh)
+if command -v fzf &>/dev/null; then
+  source <(fzf --zsh)
 
-# fzf appearance and behaviour
-export FZF_DEFAULT_OPTS="--height=40% --layout=reverse --info=inline --border"
+  # fzf appearance and behaviour
+  export FZF_DEFAULT_OPTS="--height=40% --layout=reverse --info=inline --border"
 
-# CTRL-T: search files — use fd for speed, bat for preview
-export FZF_CTRL_T_OPTS="
-  --walker-skip .git,node_modules,.cache
-  --preview 'bat -n --color=always {}'
-  --preview-window 'right:55%:wrap'"
+  # CTRL-T: search files — use fd for speed, bat for preview
+  export FZF_CTRL_T_OPTS="
+    --walker-skip .git,node_modules,.cache
+    --preview 'bat -n --color=always {}'
+    --preview-window 'right:55%:wrap'"
 
-# ALT-C: search directories — use eza for tree preview
-export FZF_ALT_C_OPTS="
-  --walker-skip .git,node_modules,.cache
-  --preview 'eza --tree --color=always --icons {}'"
+  # ALT-C: search directories — use eza for tree preview
+  export FZF_ALT_C_OPTS="
+    --walker-skip .git,node_modules,.cache
+    --preview 'eza --tree --color=always --icons {}'"
+fi
 
 # mise: runtime version manager activation (Node, Python, etc.)
-eval "$(mise activate zsh)"
+if command -v mise &>/dev/null; then
+  eval "$(mise activate zsh)"
+fi
 
 # zoxide: smarter cd with frecency-based directory jumping.
 # `z <query>` jumps to the best match; `zi` opens an fzf picker.
 # The --cmd cd flag makes zoxide replace `cd` entirely so muscle memory
 # keeps working while silently getting the smarter behaviour.
-eval "$(zoxide init zsh --cmd cd)"
+if command -v zoxide &>/dev/null; then
+  eval "$(zoxide init zsh --cmd cd)"
+fi
 
 # atuin: replaces shell history (Ctrl-R) with a fuzzy, syncable database.
 # ATUIN_NOBIND=true disables atuin's default Ctrl-R binding so we can
 # set it explicitly below, keeping control over key binding precedence.
-export ATUIN_NOBIND="true"
-eval "$(atuin init zsh)"
-bindkey '^r' atuin-search   # Ctrl-R  → atuin fuzzy history search
-bindkey '^[[A' atuin-up-search  # Up arrow → context-aware history search
+if command -v atuin &>/dev/null; then
+  export ATUIN_NOBIND="true"
+  eval "$(atuin init zsh)"
+  bindkey '^r' atuin-search       # Ctrl-R  → atuin fuzzy history search
+  bindkey '^[[A' atuin-up-search  # Up arrow → context-aware history search
+fi
 
 # starship: initialise the prompt (must be last in shell integrations).
 # Starship reads ~/.config/starship.toml for configuration.
-eval "$(starship init zsh)"
+if command -v starship &>/dev/null; then
+  eval "$(starship init zsh)"
+fi
 
 # User configuration
 
