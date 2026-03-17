@@ -1,18 +1,35 @@
-# Appearance
+# ─── Appearance ─────────────────────────────────────────────────────────────
 theme = Catppuccin Mocha
 font-family = "SauceCodePro Nerd Font"
 font-size = 15
 cursor-style = block
+cursor-blink = false              # Prevents distraction in inactive cmux panes
 
-# Window & UI
+# ─── Window & UI ────────────────────────────────────────────────────────────
 window-padding-x = 8
 window-padding-y = 8
 macos-titlebar-style = hidden
 
-# Functional
+# ─── Terminal ───────────────────────────────────────────────────────────────
+term = xterm-256color             # Ensures full color compatibility with cmux
+
+# ─── Functional ─────────────────────────────────────────────────────────────
 confirm-close-surface = false
 copy-on-select = true
 scrollback-limit = 10000
 
-# Mouse
+# ─── Mouse ──────────────────────────────────────────────────────────────────
 mouse-hide-while-typing = true
+
+# ─── Performance ────────────────────────────────────────────────────────────
+performance-log = false           # Disables debug logging for cleaner operation
+
+# ─── Keybindings (cmux-compatible) ──────────────────────────────────────────
+# Standard macOS keybindings that work seamlessly in cmux workspaces.
+# These complement cmux's vertical tab navigation.
+keybind = cmd+w=close_tab
+keybind = cmd+k=clear_terminal
+keybind = cmd+option+right=next_tab
+keybind = cmd+option+left=prev_tab
+keybind = cmd+d=split_right
+keybind = cmd+shift+d=split_down
