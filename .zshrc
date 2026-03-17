@@ -79,6 +79,13 @@ plugins=(
 
 source $ZSH/oh-my-zsh.sh
 
+# ─── Tool integrations ──────────────────────────────────────────────────────
+# fzf: key bindings (CTRL-T, CTRL-R, ALT-C) and fuzzy completion
+source <(fzf --zsh)
+
+# mise: runtime version manager activation (Node, Python, etc.)
+eval "$(mise activate zsh)"
+
 # User configuration
 
 # export MANPATH="/usr/local/man:$MANPATH"

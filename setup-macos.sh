@@ -1,0 +1,308 @@
+#!/bin/bash
+#
+# setup-macos.sh — Dotfiles bootstrap for macOS Tahoe (26+) using Homebrew
+#
+# This is the macOS equivalent of setup.sh (which targets Debian/Ubuntu).
+# It installs and configures the same toolchain via Homebrew and symlinks
+# all dotfiles from ~/dotfiles into their expected locations.
+#
+# Usage:
+#   chmod +x setup-macos.sh
+#   ./setup-macos.sh
+#
+# Requirements:
+#   - macOS Tahoe (26.x) or later
+#   - Internet connection
+#   - This repo cloned to ~/dotfiles
+#
+
+set -euo pipefail
+
+# ─── Colour helpers ──────────────────────────────────────────────────────────
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Colour
+
+info()  { echo -e "${GREEN}[INFO]${NC}  $*"; }
+warn()  { echo -e "${YELLOW}[WARN]${NC}  $*"; }
+error() { echo -e "${RED}[ERROR]${NC} $*"; }
+
+# ─── Prerequisites ───────────────────────────────────────────────────────────
+# Ensure Xcode Command Line Tools and Homebrew are present.
+prerequisites() {
+  info "Checking prerequisites…"
+
+  # 1. Xcode Command Line Tools (required by Homebrew and native compilation)
+  if ! xcode-select -p &>/dev/null; then
+    info "Installing Xcode Command Line Tools…"
+    xcode-select --install
+    # Wait for the installer to finish before continuing
+    until xcode-select -p &>/dev/null; do
+      sleep 5
+    done
+    info "Xcode Command Line Tools installed!"
+  else
+    info "Xcode Command Line Tools already installed."
+  fi
+
+  # 2. Homebrew
+  if ! command -v brew &>/dev/null; then
+    info "Installing Homebrew…"
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+    # Add Homebrew to the current shell session so subsequent commands work.
+    # On Apple Silicon Macs, brew lives under /opt/homebrew; on Intel, /usr/local.
+    if [[ -f /opt/homebrew/bin/brew ]]; then
+      eval "$(/opt/homebrew/bin/brew shellenv)"
+    elif [[ -f /usr/local/bin/brew ]]; then
+      eval "$(/usr/local/bin/brew shellenv)"
+    fi
+    info "Homebrew installed!"
+  else
+    info "Homebrew already installed."
+  fi
+
+  # 3. Update Homebrew formulae
+  info "Updating Homebrew…"
+  brew update
+
+  # 4. Create ~/.bin directory (mirrors the Linux setup)
+  if [[ ! -d "$HOME/.bin" ]]; then
+    info "Creating ~/.bin directory…"
+    mkdir -p "$HOME/.bin"
+  fi
+}
+
+# ─── Brew packages ───────────────────────────────────────────────────────────
+# Installs the core CLI packages that the Linux setup installs via apt.
+# macOS already ships with libtool, bison, curl, etc. via Xcode CLT,
+# so we only install what is missing or where a newer version is needed.
+install_brew_packages() {
+  info "Installing required Homebrew packages…"
+
+  local packages=(
+    zsh
+    git
+    cmake
+    pkg-config
+    curl
+    gettext
+    libevent
+    fd          # equivalent of fd-find on Debian
+    ripgrep     # commonly used alongside fd/fzf
+    mise        # replaces `curl https://mise.run | sh`
+  )
+
+  brew install "${packages[@]}"
+
+  info "Required Homebrew packages installed!"
+}
+
+# ─── Oh My Zsh ───────────────────────────────────────────────────────────────
+install_oh_my_zsh() {
+  info "Setting up Oh My Zsh…"
+
+  # Set zsh as the default shell if it isn't already
+  if [[ "$SHELL" != "$(which zsh)" ]]; then
+    info "Changing default shell to zsh…"
+    chsh -s "$(which zsh)"
+  fi
+
+  # Install Oh My Zsh if not already present
+  if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+  fi
+
+  # Install zsh-autosuggestions plugin if not already present
+  if [[ ! -d "$HOME/.oh-my-zsh/custom/plugins/zsh-autosuggestions" ]]; then
+    git clone https://github.com/zsh-users/zsh-autosuggestions \
+      "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-autosuggestions"
+  fi
+
+  # Symlink .zshrc (remove any existing file first)
+  rm -f "$HOME/.zshrc"
+  ln -s "$HOME/dotfiles/.zshrc" "$HOME/.zshrc"
+
+  info "Oh My Zsh installed!"
+}
+
+# ─── fzf ─────────────────────────────────────────────────────────────────────
+# On macOS we prefer the Homebrew-managed version over a git-clone install.
+# Shell integration (key bindings + fuzzy completion) is handled by adding
+# `source <(fzf --zsh)` to .zshrc (available since fzf 0.48.0+), so we
+# no longer need to run the legacy $(brew --prefix)/opt/fzf/install script.
+install_fzf() {
+  info "Installing fzf…"
+
+  if ! command -v fzf &>/dev/null; then
+    brew install fzf
+  else
+    info "fzf already installed."
+  fi
+
+  info "fzf installed!"
+}
+
+# ─── Neovim ──────────────────────────────────────────────────────────────────
+# The Linux script downloads a pre-built tarball; Homebrew provides a
+# universal (ARM + Intel) bottle that stays up to date with `brew upgrade`.
+install_neovim() {
+  info "Installing Neovim…"
+
+  if ! command -v nvim &>/dev/null; then
+    brew install neovim
+  else
+    info "Neovim already installed."
+  fi
+
+  # Symlink the Neovim config directory
+  if [[ ! -L "$HOME/.config/nvim" && ! -d "$HOME/.config/nvim" ]]; then
+    mkdir -p "$HOME/.config"
+    ln -s "$HOME/dotfiles/neovim" "$HOME/.config/nvim"
+  elif [[ -L "$HOME/.config/nvim" ]]; then
+    info "Neovim config symlink already exists."
+  else
+    warn "~/.config/nvim exists and is not a symlink — skipping. Remove it manually if you want the dotfiles version."
+  fi
+
+  info "Neovim setup complete!"
+}
+
+# ─── lazygit ─────────────────────────────────────────────────────────────────
+install_lazygit() {
+  info "Installing lazygit…"
+
+  if ! command -v lazygit &>/dev/null; then
+    brew install lazygit
+  else
+    info "lazygit already installed."
+  fi
+
+  # Symlink lazygit config
+  local lazygit_config_dir="$HOME/Library/Application Support/lazygit"
+  if [[ ! -d "$lazygit_config_dir" ]]; then
+    mkdir -p "$lazygit_config_dir"
+  fi
+  if [[ ! -L "$lazygit_config_dir/config.yml" ]]; then
+    ln -sf "$HOME/dotfiles/lazygit/config.yml" "$lazygit_config_dir/config.yml"
+  fi
+
+  info "lazygit installed!"
+}
+
+# ─── tmux ────────────────────────────────────────────────────────────────────
+install_tmux() {
+  info "Installing tmux…"
+
+  if ! command -v tmux &>/dev/null; then
+    brew install tmux
+  else
+    info "tmux already installed."
+  fi
+
+  # Install TPM (Tmux Plugin Manager) if not present
+  if [[ ! -d "$HOME/.tmux/plugins/tpm" ]]; then
+    git clone https://github.com/tmux-plugins/tpm "$HOME/.tmux/plugins/tpm"
+  fi
+
+  # Install tmuxp (tmux session manager) — available in Homebrew Core
+  info "Installing tmuxp…"
+  brew install tmuxp
+
+  # Symlink tmux config
+  rm -f "$HOME/.tmux.conf"
+  ln -s "$HOME/dotfiles/tmux/tmux.conf" "$HOME/.tmux.conf"
+
+  # NOTE: The dotfiles tmux.conf uses xsel for copy-pipe (Linux).
+  # On macOS, tmux-yank plugin auto-detects pbcopy, so no config
+  # change is needed — the tmux-yank plugin handles this correctly.
+
+  info "tmux installed!"
+}
+
+# ─── eza ─────────────────────────────────────────────────────────────────────
+# Modern replacement for ls — the Linux script downloads a tarball;
+# on macOS Homebrew provides a universal bottle.
+install_eza() {
+  info "Installing eza…"
+
+  if ! command -v eza &>/dev/null; then
+    brew install eza
+  else
+    info "eza already installed."
+  fi
+
+  info "eza installed!"
+}
+
+# ─── AeroSpace ───────────────────────────────────────────────────────────────
+# AeroSpace is a macOS-only tiling window manager — not present in the
+# Linux setup.sh but part of this dotfiles repo.
+install_aerospace() {
+  info "Installing AeroSpace…"
+
+  if ! command -v aerospace &>/dev/null; then
+    brew install --cask nikitabobko/tap/aerospace
+  else
+    info "AeroSpace already installed."
+  fi
+
+  # Symlink AeroSpace config
+  if [[ ! -L "$HOME/.aerospace.toml" ]]; then
+    ln -sf "$HOME/dotfiles/.aerospace.toml" "$HOME/.aerospace.toml"
+  fi
+
+  info "AeroSpace installed!"
+}
+
+# ─── bat (optional but referenced in .zshrc) ─────────────────────────────────
+# The .zshrc aliases `cat` to `bat` when available, so install it.
+install_bat() {
+  info "Installing bat…"
+
+  if ! command -v bat &>/dev/null; then
+    brew install bat
+  else
+    info "bat already installed."
+  fi
+
+  info "bat installed!"
+}
+
+# ─── Main ────────────────────────────────────────────────────────────────────
+main() {
+  echo ""
+  info "============================================="
+  info "  macOS Tahoe Dotfiles Setup (Homebrew)      "
+  info "============================================="
+  echo ""
+
+  prerequisites
+  install_brew_packages
+  install_oh_my_zsh
+  install_fzf
+  install_neovim
+  install_lazygit
+  install_tmux
+  install_eza
+  install_aerospace
+  install_bat
+
+  echo ""
+  info "============================================="
+  info "  Setup complete!                            "
+  info "============================================="
+  info ""
+  info "Next steps:"
+  info "  1. Add the following lines to your ~/.zshrc (if not already present):"
+  info "       source <(fzf --zsh)              # fzf shell integration (key bindings + completion)"
+  info "       eval \"\$(mise activate zsh)\"      # mise runtime version manager activation"
+  info "  2. Restart your terminal (or run: source ~/.zshrc)"
+  info "  3. Open tmux and press 'prefix + I' to install tmux plugins via TPM"
+  info "  4. Open Neovim — Lazy.nvim will auto-install plugins on first launch"
+  info "  5. Launch AeroSpace from Applications or enable 'start-at-login'"
+  echo ""
+}
+
+main
