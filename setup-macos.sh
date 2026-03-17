@@ -124,10 +124,23 @@ install_brew_packages() {
 install_oh_my_zsh() {
   info "Setting up Oh My Zsh…"
 
-  # Set zsh as the default shell if it isn't already
-  if [[ "$SHELL" != "$(which zsh)" ]]; then
-    info "Changing default shell to zsh…"
-    chsh -s "$(which zsh)"
+  # Set Homebrew zsh as the default shell if it isn't already.
+  # macOS's chsh requires the target shell to be listed in /etc/shells.
+  # Homebrew's zsh (/opt/homebrew/bin/zsh) is not there by default,
+  # so we append it first if missing, then call chsh.
+  local brew_zsh
+  brew_zsh="$(brew --prefix)/bin/zsh"
+
+  if ! grep -qF "$brew_zsh" /etc/shells; then
+    info "Adding $brew_zsh to /etc/shells…"
+    echo "$brew_zsh" | sudo tee -a /etc/shells
+  fi
+
+  if [[ "$SHELL" != "$brew_zsh" ]]; then
+    info "Changing default shell to Homebrew zsh ($brew_zsh)…"
+    chsh -s "$brew_zsh"
+  else
+    info "Default shell is already Homebrew zsh."
   fi
 
   # Install Oh My Zsh if not already present
