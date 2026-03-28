@@ -213,3 +213,6 @@ fi
 alias gs="git fuzzy status"
 alias gd="git fuzzy diff"
 alias glog="git fuzzy log"
+
+# Keys
+export ANTHROPIC_API_KEY="$(security find-generic-password -a "$USER" -s "ANTHROPIC_API_KEY" -w 2>/dev/null)"

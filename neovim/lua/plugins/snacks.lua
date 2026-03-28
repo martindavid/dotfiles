@@ -49,28 +49,11 @@ return {
           truncate = 80,
         },
       },
-      -- Configure file search to include all files
+      -- File search: include hidden files, exclude common build/dep dirs
       sources = {
         files = {
-          -- Use fd with custom ignore patterns
-          cmd = "fd",
-          args = {
-            "--type", "f",
-            "--hidden",  -- Include hidden files
-            "--exclude", "node_modules",
-            "--exclude", ".git",
-            "--exclude", "dist",
-            "--exclude", "build",
-          },
-        },
-        grep = {
-          -- Use ripgrep for grep
-          cmd = "rg",
-          args = {
-            "--color=never",
-            "--line-number",
-            "--column",
-          },
+          hidden = true,
+          exclude = { "node_modules", ".git", "dist", "build" },
         },
       },
     },

@@ -12,10 +12,14 @@ return {
         -- install language servers
         "lua-language-server",
         "tailwindcss-language-server",
+        "vtsls",
 
         -- install formatters
         "stylua",
         "prettier",
+
+        -- install linters
+        "eslint_d",
 
         -- install debuggers
         "debugpy",

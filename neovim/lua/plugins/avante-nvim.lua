@@ -1,13 +1,19 @@
-local custom_providers = require "custom.atlassian-avante"
-
--- Customize Mason
-
+-- Overrides opts only from astrocommunity.completion.avante-nvim (community.lua).
+-- Do NOT re-declare dependencies, build, or event here — Lazy.nvim merges by plugin name.
 ---@type LazySpec
 return {
   "yetone/avante.nvim",
   opts = {
-    provider = "atlgemini", -- atlgemini or atlopenai
-    -- Add new providers to the empty table if you'd like to directly consume something else (e.g. ollama locally)
-    providers = vim.tbl_deep_extend("force", {}, custom_providers),
+    provider = "claude",
+    providers = {
+      claude = {
+        endpoint = "https://api.anthropic.com",
+        model = "claude-sonnet-4-6",
+        extra_request_body = {
+          max_tokens = 8192,
+          temperature = 0,
+        },
+      },
+    },
   },
 }

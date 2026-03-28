@@ -24,6 +24,30 @@ return {
           
           -- Quick quit
           ["q"] = { ":quit<cr>", desc = "Quit buffer" },
+
+          -- CodeCompanion
+          ["<Leader>ic"] = { "<cmd>CodeCompanionChat Toggle<cr>", desc = "Toggle AI chat" },
+          ["<Leader>ia"] = { "<cmd>CodeCompanionActions<cr>",     desc = "AI actions" },
+        },
+        v = {
+          ["<Leader>ia"] = { "<cmd>CodeCompanionActions<cr>",  desc = "AI actions" },
+          ["<Leader>ic"] = { "<cmd>CodeCompanionChat Add<cr>", desc = "Add to AI chat" },
+
+          -- Copy selection with file path and line numbers (useful for sharing code snippets)
+          ["<Leader>cc"] = {
+            function()
+              local start_line = vim.fn.line "v"
+              local end_line = vim.fn.line "."
+              if start_line > end_line then start_line, end_line = end_line, start_line end
+              local lines = vim.fn.getline(start_line, end_line)
+              local file_path = vim.fn.expand "%:."
+              local output = string.format("File: %s (Lines %d-%d)\n```\n", file_path, start_line, end_line)
+              output = output .. table.concat(lines, "\n") .. "\n```"
+              vim.fn.setreg("+", output)
+              vim.notify("Copied to clipboard with metadata!", vim.log.levels.INFO)
+            end,
+            desc = "Copy selection with file and line numbers",
+          },
         },
         t = {
           -- setting a mapping to false will disable it
