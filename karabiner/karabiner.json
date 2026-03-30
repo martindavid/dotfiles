@@ -1,0 +1,30 @@
+{
+  "global": {
+    "check_for_updates_on_startup": true,
+    "show_in_menu_bar": true,
+    "show_profile_name_in_menu_bar": false
+  },
+  "profiles": [
+    {
+      "name": "Default profile",
+      "selected": true,
+      "simple_modifications": [
+        {
+          "from": { "key_code": "caps_lock" },
+          "to": [{ "key_code": "escape" }]
+        }
+      ],
+      "complex_modifications": {
+        "rules": []
+      },
+      "devices": [],
+      "fn_function_keys": [],
+      "parameters": {
+        "delay_milliseconds_before_open_device": 1000
+      },
+      "virtual_hid_keyboard": {
+        "keyboard_type_v2": "ansi"
+      }
+    }
+  ]
+}

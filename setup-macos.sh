@@ -206,11 +206,14 @@ install_neovim() {
   fi
 
   # Symlink the Neovim config directory
-  if [[ ! -L "$HOME/.config/nvim" && ! -d "$HOME/.config/nvim" ]]; then
+  if [[ -L "$HOME/.config/nvim" ]] && [[ "$(readlink "$HOME/.config/nvim")" == "$DOTFILES_DIR/neovim" ]]; then
+    info "Neovim config symlink already exists."
+  elif [[ -L "$HOME/.config/nvim" ]]; then
+    info "Neovim config symlink points elsewhere — relinking."
+    ln -sf "$DOTFILES_DIR/neovim" "$HOME/.config/nvim"
+  elif [[ ! -d "$HOME/.config/nvim" ]]; then
     mkdir -p "$HOME/.config"
     ln -s "$DOTFILES_DIR/neovim" "$HOME/.config/nvim"
-  elif [[ -L "$HOME/.config/nvim" ]]; then
-    info "Neovim config symlink already exists."
   else
     warn "~/.config/nvim exists and is not a symlink — skipping. Remove it manually if you want the dotfiles version."
   fi
@@ -232,8 +235,11 @@ install_lazygit() {
   local lazygit_config_dir="$HOME/Library/Application Support/lazygit"
   mkdir -p "$lazygit_config_dir"
 
-  if [[ -L "$lazygit_config_dir/config.yml" ]]; then
+  if [[ -L "$lazygit_config_dir/config.yml" ]] && [[ "$(readlink "$lazygit_config_dir/config.yml")" == "$DOTFILES_DIR/lazygit/config.yml" ]]; then
     info "lazygit config symlink already exists."
+  elif [[ -L "$lazygit_config_dir/config.yml" ]]; then
+    info "lazygit config symlink points elsewhere — relinking."
+    ln -sf "$DOTFILES_DIR/lazygit/config.yml" "$lazygit_config_dir/config.yml"
   elif [[ -f "$lazygit_config_dir/config.yml" ]]; then
     warn "lazygit config.yml exists and is not a symlink — backing it up as config.yml.bak"
     mv "$lazygit_config_dir/config.yml" "$lazygit_config_dir/config.yml.bak"
@@ -258,6 +264,12 @@ install_tmux() {
   # Install TPM (Tmux Plugin Manager) if not present
   if [[ ! -d "$HOME/.tmux/plugins/tpm" ]]; then
     git clone https://github.com/tmux-plugins/tpm "$HOME/.tmux/plugins/tpm"
+  fi
+
+  # Install all TPM plugins headlessly
+  if [[ -x "$HOME/.tmux/plugins/tpm/bin/install_plugins" ]]; then
+    TMUX_PLUGIN_MANAGER_PATH="$HOME/.tmux/plugins/" \
+      "$HOME/.tmux/plugins/tpm/bin/install_plugins" || true
   fi
 
   # Install tmuxp (tmux session manager)
@@ -311,8 +323,11 @@ install_aerospace() {
   fi
 
   # Symlink AeroSpace config
-  if [[ -L "$HOME/.aerospace.toml" ]]; then
+  if [[ -L "$HOME/.aerospace.toml" ]] && [[ "$(readlink "$HOME/.aerospace.toml")" == "$DOTFILES_DIR/.aerospace.toml" ]]; then
     info "AeroSpace config symlink already exists."
+  elif [[ -L "$HOME/.aerospace.toml" ]]; then
+    info "AeroSpace config symlink points elsewhere — relinking."
+    ln -sf "$DOTFILES_DIR/.aerospace.toml" "$HOME/.aerospace.toml"
   elif [[ -f "$HOME/.aerospace.toml" ]]; then
     warn "~/.aerospace.toml exists and is not a symlink — backing it up as .aerospace.toml.bak"
     mv "$HOME/.aerospace.toml" "$HOME/.aerospace.toml.bak"
@@ -322,6 +337,55 @@ install_aerospace() {
   fi
 
   info "AeroSpace installed!"
+}
+
+# ─── Karabiner-Elements ──────────────────────────────────────────────────────
+# Keyboard remapper — used to remap Caps Lock → Escape.
+# Config lives at ~/.config/karabiner/karabiner.json (XDG-compliant).
+install_karabiner() {
+  info "Installing Karabiner-Elements…"
+
+  if ! brew list --cask karabiner-elements &>/dev/null; then
+    brew install --cask karabiner-elements
+  else
+    info "Karabiner-Elements already installed."
+  fi
+
+  local karabiner_config_dir="$HOME/.config/karabiner"
+  local karabiner_config="$karabiner_config_dir/karabiner.json"
+  mkdir -p "$karabiner_config_dir"
+
+  if [[ -L "$karabiner_config" ]] && [[ "$(readlink "$karabiner_config")" == "$DOTFILES_DIR/karabiner/karabiner.json" ]]; then
+    info "Karabiner config symlink already exists."
+  elif [[ -L "$karabiner_config" ]]; then
+    info "Karabiner config symlink points elsewhere — relinking."
+    ln -sf "$DOTFILES_DIR/karabiner/karabiner.json" "$karabiner_config"
+  elif [[ -f "$karabiner_config" ]]; then
+    warn "~/.config/karabiner/karabiner.json exists and is not a symlink — backing it up as karabiner.json.bak"
+    mv "$karabiner_config" "${karabiner_config}.bak"
+    ln -sf "$DOTFILES_DIR/karabiner/karabiner.json" "$karabiner_config"
+  else
+    ln -sf "$DOTFILES_DIR/karabiner/karabiner.json" "$karabiner_config"
+  fi
+
+  info "Karabiner-Elements installed!"
+  warn "NOTE: Karabiner requires accessibility + input monitoring permissions."
+  warn "      Open System Settings → Privacy & Security and grant access if prompted."
+}
+
+# ─── Obsidian ────────────────────────────────────────────────────────────────
+# Note-taking app — installed as a cask, no config to symlink (vaults are
+# self-contained directories managed by the user).
+install_obsidian() {
+  info "Installing Obsidian…"
+
+  if ! brew list --cask obsidian &>/dev/null; then
+    brew install --cask obsidian
+  else
+    info "Obsidian already installed."
+  fi
+
+  info "Obsidian installed!"
 }
 
 # ─── git-fuzzy ───────────────────────────────────────────────────────────────
@@ -370,8 +434,11 @@ install_ghostty_config() {
   local ghostty_config="$ghostty_config_dir/config"
   mkdir -p "$ghostty_config_dir"
 
-  if [[ -L "$ghostty_config" ]]; then
+  if [[ -L "$ghostty_config" ]] && [[ "$(readlink "$ghostty_config")" == "$DOTFILES_DIR/ghostty/config" ]]; then
     info "Ghostty config symlink already exists."
+  elif [[ -L "$ghostty_config" ]]; then
+    info "Ghostty config symlink points elsewhere — relinking."
+    ln -sf "$DOTFILES_DIR/ghostty/config" "$ghostty_config"
   elif [[ -f "$ghostty_config" ]]; then
     warn "~/.config/ghostty/config exists and is not a symlink — backing it up as config.bak"
     mv "$ghostty_config" "${ghostty_config}.bak"
@@ -392,8 +459,11 @@ install_starship_config() {
   local starship_config="$HOME/.config/starship.toml"
   mkdir -p "$HOME/.config"
 
-  if [[ -L "$starship_config" ]]; then
+  if [[ -L "$starship_config" ]] && [[ "$(readlink "$starship_config")" == "$DOTFILES_DIR/starship.toml" ]]; then
     info "starship.toml symlink already exists."
+  elif [[ -L "$starship_config" ]]; then
+    info "starship.toml symlink points elsewhere — relinking."
+    ln -sf "$DOTFILES_DIR/starship.toml" "$starship_config"
   elif [[ -f "$starship_config" ]]; then
     warn "~/.config/starship.toml exists and is not a symlink — backing it up as starship.toml.bak"
     mv "$starship_config" "${starship_config}.bak"
@@ -486,6 +556,8 @@ main() {
   install_eza
   install_fonts
   install_aerospace
+  install_karabiner
+  install_obsidian
   install_git_fuzzy
   install_ghostty_config
   install_starship_config
@@ -499,7 +571,6 @@ main() {
   info ""
   info "Next steps:"
   info "  1. Restart your terminal (or run: source ~/.zshrc)"
-  info "  2. Open tmux and press 'prefix + I' to install tmux plugins via TPM"
   info "  3. Open Neovim — Lazy.nvim will auto-install plugins on first launch"
   info "  4. Launch AeroSpace from Applications or enable 'start-at-login'"
   info "  5. Run 'tmuxp load /path/to/workspace.yaml' to start a tmuxp session"

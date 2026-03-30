@@ -107,7 +107,16 @@ main() {
   info "── Removing AeroSpace config ──"
   safe_rm "$HOME/.aerospace.toml" "~/.aerospace.toml"
 
-  # ── 7. Ghostty ─────────────────────────────────────────────────────────
+  # ── 7. Karabiner-Elements ──────────────────────────────────────────────
+  info "── Removing Karabiner config ──"
+  safe_rm "$HOME/.config/karabiner/karabiner.json" "~/.config/karabiner/karabiner.json"
+  # Restore backup if one exists
+  if [[ -f "$HOME/.config/karabiner/karabiner.json.bak" ]]; then
+    mv "$HOME/.config/karabiner/karabiner.json.bak" "$HOME/.config/karabiner/karabiner.json"
+    info "Restored Karabiner config from backup."
+  fi
+
+  # ── 8. Ghostty ─────────────────────────────────────────────────────────
   info "── Removing Ghostty config ──"
   safe_rm "$HOME/.config/ghostty/config" "~/.config/ghostty/config"
   # Restore backup if one exists
@@ -116,7 +125,7 @@ main() {
     info "Restored Ghostty config from backup."
   fi
 
-  # ── 8. Starship ────────────────────────────────────────────────────────
+  # ── 9. Starship ───────────────────────────────────────────────────────
   info "── Removing Starship config ──"
   safe_rm "$HOME/.config/starship.toml" "~/.config/starship.toml"
   # Restore backup if one exists
@@ -125,11 +134,11 @@ main() {
     info "Restored Starship config from backup."
   fi
 
-  # ── 9. git-fuzzy ───────────────────────────────────────────────────────
+  # ── 10. git-fuzzy ──────────────────────────────────────────────────────
   info "── Removing git-fuzzy ──"
   safe_rmdir "$HOME/.local/share/git-fuzzy" "~/.local/share/git-fuzzy"
 
-  # ── 10. Restore default shell ──────────────────────────────────────────
+  # ── 11. Restore default shell ──────────────────────────────────────────
   info "── Restoring default shell ──"
   if [[ "$SHELL" != "/bin/zsh" ]]; then
     info "Changing default shell back to /bin/zsh (macOS default)…"

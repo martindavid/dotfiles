@@ -203,6 +203,8 @@ alias ll="eza -bhl --color always --icons -a -s type"
 alias ls="eza -G --color auto --icons -a -s type"
 alias lg="lazygit"
 alias gsync="git fetch-afe && git rebase-afe"
+alias gitfolder="cd ~/code"
+alias aiblurb="cd ~/Documents/ai_blurb"
 
 if [ "$(command -v bat)" ]; then
   unalias -m 'cat'
