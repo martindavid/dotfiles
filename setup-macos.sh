@@ -538,6 +538,33 @@ install_languages() {
   info "Language runtimes installed!"
 }
 
+# ─── macOS system defaults ───────────────────────────────────────────────────
+# Apply opinionated macOS defaults. Finder is restarted once after all writes
+# to avoid the cost of six separate restarts.
+configure_macos_defaults() {
+  info "Applying macOS system defaults…"
+
+  # Finder
+  defaults write NSGlobalDomain  "AppleShowAllExtensions" -bool  "true"
+  defaults write com.apple.finder "AppleShowAllFiles"      -bool  "true"
+  defaults write com.apple.finder "ShowPathbar"            -bool  "true"
+  defaults write com.apple.finder "ShowStatusBar"          -bool  "true"
+  defaults write com.apple.finder "FXPreferredViewStyle"   -string "Nlsv"
+  defaults write com.apple.finder "FXDefaultSearchScope"   -string "SCcf"
+  killall Finder
+
+  # Dock
+  defaults write com.apple.dock "autohide-delay" -float "0"
+  killall Dock
+
+  # Keyboard — requires logout to take effect
+  defaults write NSGlobalDomain KeyRepeat        -int 2   # fastest
+  defaults write NSGlobalDomain InitialKeyRepeat -int 15  # shortest delay
+  warn "Keyboard repeat settings applied — log out and back in for them to take effect."
+
+  info "macOS defaults applied!"
+}
+
 # ─── Main ────────────────────────────────────────────────────────────────────
 main() {
   echo ""
@@ -563,6 +590,7 @@ main() {
   install_starship_config
   install_bat
   install_languages
+  configure_macos_defaults
 
   echo ""
   info "============================================="
