@@ -117,35 +117,22 @@ return {
             },
           },
         },
-        -- MULTI-WORKSPACE MODE: Allow multiple workspace folders
-        -- This enables cross-package features like VSCode
-        root_dir = function(fname)
-          local util = require("lspconfig.util")
-          -- Find closest package.json (current package)
-          return util.root_pattern("package.json")(fname)
-        end,
-        -- CRITICAL: Don't override workspace_folders - allow vtsls to manage them
-        -- BUT configure it to be memory-efficient like VSCode
-        on_init = function(client, initialize_result)
-          -- Ensure we're using workspace TypeScript
-          if initialize_result.capabilities then
-            client.server_capabilities.workspace = client.server_capabilities.workspace or {}
-            client.server_capabilities.workspace.workspaceFolders = {
-              supported = true,
-              changeNotifications = true,
-            }
-          end
+        -- MULTI-WORKSPACE: root at nearest package.json for monorepo support
+        -- v6 async signature: root_dir receives (bufnr, callback)
+        root_dir = function(bufnr, cb)
+          cb(vim.fs.root(bufnr, "package.json"))
         end,
       },
     },
     -- customize how language servers are attached
     handlers = {
-      -- a function without a key is simply the default handler, functions take two parameters, the server name and the configured options table for that server
-      -- function(server, opts) require("lspconfig")[server].setup(opts) end
+      -- v6: the default handler uses the "*" key and receives only the server name
+      -- ["*"] = function(server) vim.lsp.enable(server) end
 
-      -- the key is the server that is being setup with `lspconfig`
-      -- rust_analyzer = false, -- setting a handler to false will disable the set up of that language server
-      -- pyright = function(_, opts) require("lspconfig").pyright.setup(opts) end -- or a custom handler function can be passed
+      -- disable a server by setting its key to false
+      -- rust_analyzer = false,
+      -- custom handler example:
+      -- pyright = function(server) vim.lsp.enable(server) end
     },
     -- Configure buffer local auto commands to add when attaching a language server
     autocmds = {
@@ -164,7 +151,7 @@ return {
           -- the rest of the autocmd options (:h nvim_create_autocmd)
           desc = "Refresh codelens (buffer)",
           callback = function(args)
-            if require("astrolsp").config.features.codelens then vim.lsp.codelens.refresh { bufnr = args.buf } end
+            if require("astrolsp").config.features.codelens then vim.lsp.codelens.enable(true, { bufnr = args.buf }) end
           end,
         },
       },
@@ -182,7 +169,7 @@ return {
           function() require("astrolsp.toggles").buffer_semantic_tokens() end,
           desc = "Toggle LSP semantic highlight (buffer)",
           cond = function(client)
-            return client.supports_method "textDocument/semanticTokens/full" and vim.lsp.semantic_tokens ~= nil
+            return client:supports_method("textDocument/semanticTokens/full") and vim.lsp.semantic_tokens ~= nil
           end,
         },
       },

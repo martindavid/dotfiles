@@ -38,5 +38,25 @@ return {
         -- This can be found in the `lua/lazy_setup.lua` file
       },
     },
+    -- Treesitter parser installation (v6: managed here instead of nvim-treesitter opts)
+    treesitter = {
+      ensure_installed = {
+        "lua",
+        "vim",
+        "json",
+        "javascript",
+        "typescript",
+        "tsx",
+        "yaml",
+        "html",
+        "css",
+        "markdown",
+        "svelte",
+        "graphql",
+        "bash",
+        "dockerfile",
+        "gitignore",
+      },
+    },
   },
 }
