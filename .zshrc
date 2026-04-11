@@ -218,3 +218,13 @@ alias glog="git fuzzy log"
 
 # Keys
 export ANTHROPIC_API_KEY="$(security find-generic-password -a "$USER" -s "ANTHROPIC_API_KEY" -w 2>/dev/null)"
+
+# ─── SSH Agent (tmux fix) ────────────────────────────────────────────────────
+# macOS rotates the launchd SSH_AUTH_SOCK path on every login, which breaks
+# tmux panes that were created in a previous session. We symlink the current
+# socket to a fixed path so tmux always finds a live agent regardless of when
+# the pane was opened.
+if [[ -n "$SSH_AUTH_SOCK" && "$SSH_AUTH_SOCK" != "$HOME/.ssh/agent/ssh-agent.sock" ]]; then
+  ln -sf "$SSH_AUTH_SOCK" "$HOME/.ssh/agent/ssh-agent.sock"
+  export SSH_AUTH_SOCK="$HOME/.ssh/agent/ssh-agent.sock"
+fi
