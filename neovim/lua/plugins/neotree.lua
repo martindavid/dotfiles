@@ -67,14 +67,6 @@ return {
     
     opts.window = opts.window or {}
     opts.window.position = "left"
-    
-    opts.event_handlers = {
-      {
-        event = "file_opened",
-        handler = function() require("neo-tree.command").execute { action = "close" } end,
-      },
-    }
-    
     return opts
   end,
 }

@@ -1,17 +1,15 @@
+---@type LazySpec
 return {
   {
     "AstroNvim/astrocore",
     ---@type AstroCoreOpts
     opts = {
       mappings = {
-        -- first key is the mode
         n = {
-          -- second key is the lefthand side of the map
-          
           -- Buffer navigation
           ["]b"] = { function() require("astrocore.buffer").nav(vim.v.count1) end, desc = "Next buffer" },
           ["[b"] = { function() require("astrocore.buffer").nav(-vim.v.count1) end, desc = "Previous buffer" },
-          
+
           -- Buffer management
           ["<Leader>bd"] = {
             function()
@@ -21,7 +19,7 @@ return {
             end,
             desc = "Close buffer from tabline",
           },
-          
+
           -- Quick quit
           ["q"] = { ":quit<cr>", desc = "Quit buffer" },
 
@@ -34,6 +32,23 @@ return {
           ["<Leader>ic"] = { "<cmd>CodeCompanionChat Add<cr>", desc = "Add to AI chat" },
 
           -- Copy selection with file path and line numbers (useful for sharing code snippets)
+          ["<Leader>cc"] = {
+            function()
+              local start_line = vim.fn.line "v"
+              local end_line = vim.fn.line "."
+              if start_line > end_line then start_line, end_line = end_line, start_line end
+              local lines = vim.fn.getline(start_line, end_line)
+              local file_path = vim.fn.expand "%:."
+              local output = string.format("File: %s (Lines %d-%d)\n```\n", file_path, start_line, end_line)
+              output = output .. table.concat(lines, "\n") .. "\n```"
+              vim.fn.setreg("+", output)
+              vim.notify("Copied to clipboard with metadata!", vim.log.levels.INFO)
+            end,
+            desc = "Copy selection with file and line numbers",
+          },
+        },
+        v = {
+          -- Copy selection with file path and line numbers (for sharing context)
           ["<Leader>cc"] = {
             function()
               local start_line = vim.fn.line "v"

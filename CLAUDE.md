@@ -2,82 +2,83 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## What This Repo Is
+## What this repo is
 
-Personal dotfiles for macOS (Tahoe 26+) with a Linux fallback. Installs and symlinks a complete terminal development environment: Zsh + Oh My Zsh, Neovim (AstroNvim v5+), tmux, Ghostty, lazygit, and a curated set of modern CLI tools.
+Personal dotfiles. Each tool's config lives in this repo and is **symlinked** into its
+expected location by a bootstrap script. The repo is expected to be cloned to `~/dotfiles`
+(the Linux script hardcodes that path; the macOS script resolves its own location, so any
+clone path works).
 
-## Key Scripts
+There is no build, package, or test suite. "Running" this repo means running a setup script,
+then letting each tool pick up its symlinked config.
 
-| Script | Purpose |
+## Architecture: parallel bootstrap scripts + symlinks
+
+Three top-level scripts manage installation, each idempotent and safe to re-run:
+
+- `setup-macos.sh` — macOS (Tahoe 26+), installs via **Homebrew**. The canonical, most
+  complete script (also handles AeroSpace, Ghostty, starship, fonts, git-fuzzy, mise languages).
+- `setup.sh` — Debian/Ubuntu, installs via **apt** + source builds. The Linux counterpart.
+- `reset-macos.sh` — removes only the symlinks and cloned helper repos created by
+  `setup-macos.sh` (Oh My Zsh, TPM, git-fuzzy). Does **not** uninstall Homebrew packages.
+  Restores `.bak` backups where setup created them.
+
+`setup-macos.sh` and `setup.sh` are intentional mirrors of the same toolchain on two OSes.
+**When you add or change a tool in one, update the other** unless the tool is OS-specific
+(e.g. AeroSpace and `pbcopy` handling are macOS-only; some apt source-builds are Linux-only).
+
+Setup scripts deliberately avoid `set -e` — Homebrew/apt commands often return non-zero for
+non-fatal reasons ("already installed"). Exit codes are checked explicitly where failure matters.
+Each config symlink is guarded: existing real files are backed up to `*.bak` before linking.
+
+### Where configs are symlinked to
+
+| Repo path | Symlinked to |
 |---|---|
-| `setup-macos.sh` | Primary setup for macOS — installs Homebrew packages, Oh My Zsh, symlinks all configs |
-| `reset-macos.sh` | Removes all symlinks and cloned repos without uninstalling Homebrew packages |
-| `setup.sh` | Linux/Debian fallback using `apt` |
+| `.zshrc` | `~/.zshrc` |
+| `neovim/` | `~/.config/nvim` |
+| `tmux/tmux.conf` | `~/.tmux.conf` |
+| `lazygit/config.yml` | `~/Library/Application Support/lazygit/config.yml` (macOS) |
+| `ghostty/config` | `~/.config/ghostty/config` |
+| `starship.toml` | `~/.config/starship.toml` |
+| `.aerospace.toml` | `~/.aerospace.toml` |
 
-### Running the macOS setup
+Editing a config = editing the file in this repo (the symlink target). No copy step.
 
-```bash
-./setup-macos.sh
+## Neovim (`neovim/`)
+
+An **AstroNvim v6+** configuration managed by **Lazy.nvim**. Structure:
+
+- `init.lua` — bootstraps Lazy.nvim, then `require "lazy_setup"` and `require "polish"`.
+  Treat as untouchable boilerplate.
+- `lua/lazy_setup.lua` — declares the AstroNvim base + imports the plugin specs.
+- `lua/community.lua` — AstroCommunity plugin pack imports.
+- `lua/plugins/*.lua` — one file per plugin/concern (e.g. `astrocore.lua` for options/mappings/
+  autocmds, `astrolsp.lua` for LSP, `mason.lua` for tool installs, `treesitter.lua`, `none-ls.lua`,
+  `disabled.lua` to turn off defaults). Each returns a Lazy plugin spec table.
+- `lua/custom/` — local, non-plugin modules (e.g. `atlassian-avante.lua`).
+- `lsp/*.lua` — per-server LSP config consumed via the Neovim 0.11+ `vim.lsp.config` mechanism
+  (e.g. `lsp/vtsls.lua`).
+- `lazy-lock.json` — the Lazy.nvim lockfile; commit changes to it when plugins update.
+
+Lua formatting and linting (config files exist; run the tools directly):
+
+```sh
+stylua neovim/          # format — config in neovim/.stylua.toml (2-space, 120 col)
+selene neovim/          # lint — config in neovim/selene.toml (std = "neovim")
 ```
 
-No build step, linter, or test suite — these are shell scripts and config files.
+`neovim/.luarc.json` and `.neoconf.json` disable lua_ls's own formatter so stylua owns formatting.
+Plugins auto-install on first `nvim` launch; there is no separate install command.
 
-### Installing language runtimes (via mise)
+## Do not touch: `tmuxp/`
 
-```bash
-mise install node@latest
-mise install go@latest
-mise install python@latest
-mise install ruby@latest
-```
+`tmuxp/` is a **vendored clone of the upstream `github.com/tmux-python/tmuxp` project** and has
+its own `.git`. It is not part of these dotfiles. Do not modify, lint, or refactor anything under
+`tmuxp/`, and exclude it from repo-wide searches and edits.
 
-## Architecture
+## Post-setup manual steps
 
-### Symlink Strategy
-
-The setup script symlinks configs from the repo into their expected system locations (not copy). All changes should be made here in the repo — they take effect immediately because the symlinks point here.
-
-Key symlink targets:
-- `~/.zshrc` → `dotfiles/.zshrc`
-- `~/.config/nvim` → `dotfiles/neovim/`
-- `~/.config/tmux/tmux.conf` → `dotfiles/tmux/tmux.conf`
-- `~/.config/ghostty/config` → `dotfiles/ghostty/config`
-- `~/Library/Application Support/lazygit/config.yml` → `dotfiles/lazygit/config.yml`
-
-### Idempotency
-
-Both `setup-macos.sh` and `reset-macos.sh` are safe to run multiple times. The setup script uses `set -uo pipefail` (intentionally not `set -e`) so non-fatal Homebrew failures don't abort the full install. Before overwriting any existing file, it backs it up with a `.bak` extension.
-
-### Neovim (AstroNvim v5+)
-
-Config lives in `neovim/`. Entry point is `neovim/init.lua` which bootstraps Lazy.nvim. Plugin configs live in `neovim/lua/plugins/`. The `community.lua` file loads AstroNvim community modules. LSP setup is in `astrolsp.lua`, key mappings in `mappings.lua`.
-
-### Language Management (mise)
-
-`mise` is the single tool for managing Node, Go, Python, and Ruby versions — replacing nvm, rbenv, pyenv, etc. It supports both global and per-project `.mise.toml` files.
-
-### Shell (.zshrc)
-
-- Uses Homebrew's zsh
-- Oh My Zsh with plugins: `zsh-autosuggestions`, `zsh-interactive-cd`, `git`
-- Starship handles the prompt (no Oh My Zsh theme)
-- Apple Silicon Homebrew path (`/opt/homebrew`) is set explicitly
-- `git-fuzzy` bin is added to PATH for interactive git CLI
-
-## Tool Reference
-
-| Tool | Purpose |
-|---|---|
-| `mise` | Language version manager (Node, Go, Python, Ruby) |
-| `starship` | Shell prompt |
-| `zoxide` | Frecency-based `cd` replacement |
-| `atuin` | Shell history with sync |
-| `fzf` | Fuzzy finder (shell integration via Homebrew) |
-| `fd` / `ripgrep` | Fast find/grep alternatives |
-| `eza` | Colorized `ls` replacement |
-| `bat` | Syntax-highlighted `cat` |
-| `git-fuzzy` | Interactive git TUI (cloned to `~/.local/share/git-fuzzy`) |
-| `delta` | Prettier git diffs |
-| `lazygit` | Full TUI git client |
-| `btop` | System monitor |
-| `tmuxp` | Tmux session manager (templates in `tmuxp/`) |
+After `setup-macos.sh` (it prints these): restart the shell, install tmux plugins with
+`prefix + I` (TPM), launch Neovim once for Lazy to install plugins, and start sessions with
+`tmuxp load <workspace>.yaml`.

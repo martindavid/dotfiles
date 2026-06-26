@@ -9,16 +9,15 @@ return {
   "AstroNvim/astrocommunity",
   { import = "astrocommunity.pack.lua" },
   -- import/override with your plugins folder
-  { import = "astrocommunity.ai.avante-nvim" },
   { import = "astrocommunity.pack.json" },
   { import = "astrocommunity.lsp.nvim-lsp-file-operations" },
   { import = "astrocommunity.pack.html-css" },
   { import = "astrocommunity.pack.typescript" },
+  { import = "astrocommunity.pack.eslint" },
   { import = "astrocommunity.motion.leap-nvim" },
   -- { import = "astrocommunity.git.blame-nvim" },
   -- { import = "astrocommunity.git.gitlinker-nvim" },
   -- { import = "astrocommunity.completion.copilot-cmp" },
-  { import = "astrocommunity.utility.telescope-live-grep-args-nvim" },
   -- { import = "astrocommunity.recipes.vscode" },
   { import = "astrocommunity.recipes.heirline-nvchad-statusline" },
 }
