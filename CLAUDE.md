@@ -42,6 +42,7 @@ Each config symlink is guarded: existing real files are backed up to `*.bak` bef
 | `ghostty/config` | `~/.config/ghostty/config` |
 | `starship.toml` | `~/.config/starship.toml` |
 | `.aerospace.toml` | `~/.aerospace.toml` |
+| `aerospace/*.sh` | `~/.config/aerospace/*.sh` |
 
 Editing a config = editing the file in this repo (the symlink target). No copy step.
 
@@ -70,6 +71,21 @@ selene neovim/          # lint — config in neovim/selene.toml (std = "neovim")
 
 `neovim/.luarc.json` and `.neoconf.json` disable lua_ls's own formatter so stylua owns formatting.
 Plugins auto-install on first `nvim` launch; there is no separate install command.
+
+## AeroSpace helpers (`aerospace/`)
+
+`aerospace/share-on.sh` and `share-off.sh` are called by AeroSpace's `mode.share` binding
+(`alt-shift-p` → `s`/`f`). They `sed`-patch the two sentinel-commented `outer.left/right`
+lines in `.aerospace.toml` and run `aerospace reload-config`. The scripts are symlinked to
+`~/.config/aerospace/` by `setup-macos.sh`.
+
+`share-on.sh` only applies the 640px gap when the LG UltraFine is detected via
+`aerospace list-monitors`; it exits safely when running on the MacBook Pro alone.
+After using share mode, run `share-off.sh` (or `alt-shift-p → f`) before committing
+to ensure `.aerospace.toml` is restored to `outer.left = 0`.
+
+`streamdeck/key-mapping.md` documents the Stream Deck Plus hotkey layout — it is
+reference only and is not installed by any setup script.
 
 ## Do not touch: `tmuxp/`
 

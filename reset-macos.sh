@@ -106,6 +106,14 @@ main() {
   # ── 6. AeroSpace ───────────────────────────────────────────────────────
   info "── Removing AeroSpace config ──"
   safe_rm "$HOME/.aerospace.toml" "~/.aerospace.toml"
+  safe_rm "$HOME/.config/aerospace/share-on.sh"  "~/.config/aerospace/share-on.sh"
+  safe_rm "$HOME/.config/aerospace/share-off.sh" "~/.config/aerospace/share-off.sh"
+  safe_rm "$HOME/.config/aerospace/float-all.sh"    "~/.config/aerospace/float-all.sh"
+  safe_rm "$HOME/.config/aerospace/float-off.sh"    "~/.config/aerospace/float-off.sh"
+  safe_rm "$HOME/.config/aerospace/resize-width.sh" "~/.config/aerospace/resize-width.sh"
+  safe_rm "$HOME/.config/aerospace/resize-25.sh"    "~/.config/aerospace/resize-25.sh"
+  safe_rm "$HOME/.config/aerospace/resize-50.sh"    "~/.config/aerospace/resize-50.sh"
+  safe_rm "$HOME/.config/aerospace/resize-75.sh"    "~/.config/aerospace/resize-75.sh"
 
   # ── 7. Karabiner-Elements ──────────────────────────────────────────────
   info "── Removing Karabiner config ──"

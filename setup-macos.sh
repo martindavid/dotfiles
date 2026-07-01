@@ -336,6 +336,27 @@ install_aerospace() {
     ln -sf "$DOTFILES_DIR/.aerospace.toml" "$HOME/.aerospace.toml"
   fi
 
+  # Symlink AeroSpace helper scripts (share-on.sh, share-off.sh)
+  local aerospace_scripts_dir="$HOME/.config/aerospace"
+  mkdir -p "$aerospace_scripts_dir"
+  for script in share-on.sh share-off.sh float-all.sh float-off.sh resize-width.sh resize-25.sh resize-50.sh resize-75.sh; do
+    local src="$DOTFILES_DIR/aerospace/$script"
+    local dst="$aerospace_scripts_dir/$script"
+    if [[ -L "$dst" ]] && [[ "$(readlink "$dst")" == "$src" ]]; then
+      info "AeroSpace script symlink already exists: $script"
+    elif [[ -L "$dst" ]]; then
+      info "AeroSpace script symlink points elsewhere — relinking: $script"
+      ln -sf "$src" "$dst"
+    elif [[ -f "$dst" ]]; then
+      warn "$dst exists and is not a symlink — backing up as ${script}.bak"
+      mv "$dst" "${dst}.bak"
+      ln -sf "$src" "$dst"
+    else
+      ln -sf "$src" "$dst"
+    fi
+    chmod +x "$src"
+  done
+
   info "AeroSpace installed!"
 }
 

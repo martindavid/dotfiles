@@ -55,12 +55,12 @@ preset = 'qwerty'
 #                 Monitor pattern is the same as for 'workspace-to-monitor-force-assignment'.
 #                 See: https://nikitabobko.github.io/AeroSpace/guide#assign-workspaces-to-monitors
 [gaps]
-inner.horizontal = 0
-inner.vertical =   0
-outer.left =       0
-outer.bottom =     0
-outer.top =        0
-outer.right =      0
+inner.horizontal = 8
+inner.vertical   = 8
+outer.left   = 0  # aerospace:share-gap
+outer.right  = 0  # aerospace:share-gap
+outer.top    = 6
+outer.bottom = 6
 
 [workspace-to-monitor-force-assignment]
 A = 'secondary'
@@ -104,12 +104,13 @@ S = 'secondary'
 # See: https://nikitabobko.github.io/AeroSpace/commands#layout
 alt-slash = 'layout tiles horizontal vertical'
 alt-comma = 'layout accordion horizontal vertical'
+alt-0     = 'balance-sizes'
 
 # See: https://nikitabobko.github.io/AeroSpace/commands#focus
-alt-shift-cmd-ctrl-h = 'focus left'
-alt-shift-cmd-ctrl-j = 'focus down'
-alt-shift-cmd-ctrl-k = 'focus up'
-alt-shift-cmd-ctrl-l = 'focus right'
+alt-h = 'focus left'
+alt-j = 'focus down'
+alt-k = 'focus up'
+alt-l = 'focus right'
 
 # See: https://nikitabobko.github.io/AeroSpace/commands#move
 alt-shift-h = 'move left'
@@ -175,7 +176,7 @@ alt-shift-i = 'move-node-to-workspace I'
 alt-shift-m = 'move-node-to-workspace M'
 alt-shift-n = 'move-node-to-workspace N'
 alt-shift-o = 'move-node-to-workspace O'
-alt-shift-p = 'move-node-to-workspace P'
+alt-shift-p         = 'mode share'   # repurposed — P workspace unreachable via shift; use alt-p to switch to P
 alt-shift-q = 'move-node-to-workspace Q'
 alt-shift-r = 'move-node-to-workspace R'
 alt-shift-s = 'move-node-to-workspace S'
@@ -211,6 +212,20 @@ alt-shift-j = ['join-with down', 'mode main']
 alt-shift-k = ['join-with up', 'mode main']
 alt-shift-l = ['join-with right', 'mode main']
 
+1 = ['exec-and-forget ~/.config/aerospace/resize-25.sh', 'mode main']
+2 = ['exec-and-forget ~/.config/aerospace/resize-50.sh', 'mode main']
+3 = ['exec-and-forget ~/.config/aerospace/resize-75.sh', 'mode main']
+
 down = 'volume down'
 up = 'volume up'
 shift-down = ['volume set 0', 'mode main']
+
+# 'share' binding mode — workspace-wide state changes.
+# Enter with alt-shift-p, then a key below, then auto-returns to main.
+[mode.share.binding]
+s   = ['exec-and-forget ~/.config/aerospace/share-on.sh',   'mode main']  # screen share ON
+f   = ['exec-and-forget ~/.config/aerospace/share-off.sh',  'mode main']  # screen share OFF
+w   = ['exec-and-forget ~/.config/aerospace/float-all.sh',  'mode main']  # float all windows
+t   = ['exec-and-forget ~/.config/aerospace/float-off.sh',  'mode main']  # tile all windows
+esc = 'mode main'
+
